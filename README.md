@@ -1,3 +1,7 @@
+# Fork details
+Modified code to use the mmcv implementation of MultiScaleDeformableAttention (from [here](https://mmcv.readthedocs.io/en/latest/_modules/mmcv/ops/multi_scale_deform_attn.html)). Not tested yet.
+
+# Original README copied below
 # MOTRv2: Bootstrapping End-to-End Multi-Object Tracking by Pretrained Object Detectors
 
 [![arXiv](https://img.shields.io/badge/arXiv-2211.09791-COLOR.svg)](https://arxiv.org/abs/2211.09791)
