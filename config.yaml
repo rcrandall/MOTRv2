@@ -1,0 +1,117 @@
+# dist params: overridden in script
+rank: 0
+world_size: 1
+gpu: 0
+dist_url: "env://"
+distributed: true
+dist_backend: "nccl"
+
+lr: 2e-4
+lr_backbone_names: ["backbone.0"]
+lr_backbone: 2e-5
+lr_linear_proj_names: ['reference_points', 'sampling_offsets']
+lr_linear_proj_mult: 0.1
+batch_size: 1
+weight_decay: 1e-4
+epochs: 5
+lr_drop: 4
+save_period: 50
+lr_drop_epochs: null
+clip_max_norm: 0.1
+
+meta_arch: motr
+sgd: False
+
+with_box_refine: True
+two_stage: False
+accurate_ratio: False
+
+frozen_weights: null 
+num_anchors: 1
+
+backbone: resnet50
+enable_fpn: False
+dilation: False
+position_embedding: sine
+position_embedding_scale: 6.283185307179586  # 2 * np.pi
+num_feature_levels: 4
+
+enc_layers: 6
+dec_layers: 6
+dim_feedforward: 1024
+hidden_dim: 256
+dropout: 0
+nheads: 8
+num_queries: 10
+dec_n_points: 4
+enc_n_points: 4
+decoder_cross_self: False
+sigmoid_attn: False
+crop: False
+cj: False
+extra_track_attn: False
+loss_normalizer: False
+max_size: 1333
+val_width: 800
+filter_ignore: False
+append_crowd: True
+
+masks: False
+
+aux_loss: True
+
+mix_match: False
+set_cost_class: 2
+set_cost_bbox: 5
+set_cost_giou: 2
+
+mask_loss_coef: 1
+dice_loss_coef: 1
+cls_loss_coef: 2
+bbox_loss_coef: 5
+giou_loss_coef: 2
+focal_alpha: 0.25
+
+dataset_file: e2e_dance
+gt_file_train: null
+gt_file_val: null
+coco_path: /data/workspace/detectron2/datasets/coco/
+coco_panoptic_path: null
+remove_difficult: False
+
+output_dir: "."
+device: cuda
+seed: 42
+resume: ""
+start_epoch: 0
+eval: False
+vis: False
+num_workers: 2
+pretrained: /home/rcrandal/MOTRv2/MOTRv2/r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
+cache_mode: False
+
+mot_path: /home/rcrandal/MOT_datasets
+det_db: det_db_motrv2.json
+input_video: figs/demo.mp4
+data_txt_path_train: ./datasets/data_path/detmot17.train
+data_txt_path_val: ./datasets/data_path/detmot17.train
+img_path: data/valid/JPEGImages/
+
+query_interaction_layer: QIMv2
+sample_mode: random_interval
+sample_interval: 10
+random_drop: 0.1
+fp_ratio: 0.3
+merger_dropout: 0
+update_query_pos: False
+
+sampler_steps: null 
+sampler_lengths: [5]
+exp_name: submit
+memory_bank_score_thresh: 0.0
+memory_bank_len: 4
+memory_bank_type: null 
+memory_bank_with_self_attn: False
+
+use_checkpoint: True
+query_denoise: 0.05
