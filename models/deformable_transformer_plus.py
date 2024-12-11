@@ -22,7 +22,6 @@ from models.structures import Boxes, matched_boxlist_iou, pairwise_iou
 
 from util.misc import inverse_sigmoid
 from util.box_ops import box_cxcywh_to_xyxy
-# from models.ops.modules import MSDeformAttn
 
 from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
 
@@ -218,7 +217,6 @@ class DeformableTransformerEncoderLayer(nn.Module):
         super().__init__()
 
         # self attention
-        #self.self_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points, sigmoid_attn=sigmoid_attn)
         self.self_attn = MultiScaleDeformableAttention(
             embed_dims=d_model,
             num_heads=n_heads,
@@ -333,7 +331,6 @@ class DeformableTransformerDecoderLayer(nn.Module):
         self.memory_bank = memory_bank
 
         # cross attention
-        # self.cross_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points, sigmoid_attn=sigmoid_attn)
         self.cross_attn = MultiScaleDeformableAttention(
             embed_dims=d_model,
             num_heads=n_heads,

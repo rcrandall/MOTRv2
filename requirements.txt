@@ -1,3 +1,4 @@
 tqdm
 scipy
 opencv-python
+mmcv==2.2.0
