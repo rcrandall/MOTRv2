@@ -22,8 +22,29 @@ from models.structures import Boxes, matched_boxlist_iou, pairwise_iou
 
 from util.misc import inverse_sigmoid
 from util.box_ops import box_cxcywh_to_xyxy
-from models.ops.modules import MSDeformAttn
+# from models.ops.modules import MSDeformAttn
 
+from mmcv.ops.multi_scale_deform_attn import MultiScaleDeformableAttention
+
+
+def reset_msda_params(model):
+    # Apply same initialization as original MOTRv2 code with
+    # mmcv's MultiScale deformable attention implementation
+    # copied from ms_deform_attn.py, modified variable names to match mmcv
+    constant_(model.sampling_offsets.weight.data, 0.)
+    thetas = torch.arange(model.num_heads, dtype=torch.float32) * (2.0 * math.pi / model.num_heads)
+    grid_init = torch.stack([thetas.cos(), thetas.sin()], -1)
+    grid_init = (grid_init / grid_init.abs().max(-1, keepdim=True)[0]).view(model.num_heads, 1, 1, 2).repeat(1, model.num_levels, model.num_points, 1)
+    for i in range(model.num_points):
+        grid_init[:, :, i, :] *= i + 1
+    with torch.no_grad():
+        model.sampling_offsets.bias = nn.Parameter(grid_init.view(-1))
+    constant_(model.attention_weights.weight.data, 0.)
+    constant_(model.attention_weights.bias.data, 0.)
+    xavier_uniform_(model.value_proj.weight.data)
+    constant_(model.value_proj.bias.data, 0.)
+    xavier_uniform_(model.output_proj.weight.data)
+    constant_(model.output_proj.bias.data, 0.)
 
 class DeformableTransformer(nn.Module):
     def __init__(self, d_model=256, nhead=8,
@@ -68,8 +89,8 @@ class DeformableTransformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
         for m in self.modules():
-            if isinstance(m, MSDeformAttn):
-                m._reset_parameters()
+            if isinstance(m, MultiScaleDeformableAttention):
+                reset_msda_params(m)
         normal_(self.level_embed)
 
     def get_proposal_pos_embed(self, proposals):
@@ -197,7 +218,16 @@ class DeformableTransformerEncoderLayer(nn.Module):
         super().__init__()
 
         # self attention
-        self.self_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points, sigmoid_attn=sigmoid_attn)
+        #self.self_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points, sigmoid_attn=sigmoid_attn)
+        self.self_attn = MultiScaleDeformableAttention(
+            embed_dims=d_model,
+            num_heads=n_heads,
+            num_levels=n_levels,
+            num_points=n_points,
+            batch_first=True
+        )
+
+
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
 
@@ -221,7 +251,26 @@ class DeformableTransformerEncoderLayer(nn.Module):
 
     def forward(self, src, pos, reference_points, spatial_shapes, level_start_index, padding_mask=None):
         # self attention
-        src2 = self.self_attn(self.with_pos_embed(src, pos), reference_points, src, spatial_shapes, level_start_index, padding_mask)
+        # src2 = self.self_attn(
+        #     self.with_pos_embed(src, pos),
+        #     reference_points,
+        #     src,
+        #     spatial_shapes,
+        #     level_start_index,
+        #     padding_mask
+        # )
+
+        src2 = self.self_attn(
+            query=src,
+            key=src,
+            value=src,
+            query_pos=pos,
+            key_padding_mask=padding_mask,
+            reference_points=reference_points,
+            spatial_shapes=spatial_shapes,
+            level_start_index=level_start_index,
+        )
+
         src = src + self.dropout1(src2)
         src = self.norm1(src)
 
@@ -284,7 +333,16 @@ class DeformableTransformerDecoderLayer(nn.Module):
         self.memory_bank = memory_bank
 
         # cross attention
-        self.cross_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points, sigmoid_attn=sigmoid_attn)
+        # self.cross_attn = MSDeformAttn(d_model, n_levels, n_heads, n_points, sigmoid_attn=sigmoid_attn)
+        self.cross_attn = MultiScaleDeformableAttention(
+            embed_dims=d_model,
+            num_heads=n_heads,
+            num_levels=n_levels,
+            num_points=n_points,
+            batch_first=True
+        )
+        
+        
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
 
@@ -355,9 +413,21 @@ class DeformableTransformerDecoderLayer(nn.Module):
         # self attention
         tgt = self._forward_self_attn(tgt, query_pos, attn_mask)
         # cross attention
-        tgt2 = self.cross_attn(self.with_pos_embed(tgt, query_pos),
-                               reference_points,
-                               src, src_spatial_shapes, level_start_index, src_padding_mask)
+        # tgt2 = self.cross_attn(self.with_pos_embed(tgt, query_pos),
+        #                        reference_points,
+        #                        src, src_spatial_shapes, level_start_index, src_padding_mask)
+        tgt2 = self.cross_attn(
+            query=tgt,
+            key=src,
+            value=src,
+            query_pos=query_pos,
+            key_padding_mask=src_padding_mask,
+            reference_points=reference_points,
+            spatial_shapes=src_spatial_shapes,
+            level_start_index=level_start_index,
+        )
+
+
         tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
 
@@ -369,9 +439,20 @@ class DeformableTransformerDecoderLayer(nn.Module):
     def _forward_cross_self(self, tgt, query_pos, reference_points, src, src_spatial_shapes, level_start_index,
                             src_padding_mask=None, attn_mask=None):
         # cross attention
-        tgt2 = self.cross_attn(self.with_pos_embed(tgt, query_pos),
-                               reference_points,
-                               src, src_spatial_shapes, level_start_index, src_padding_mask)
+        # tgt2 = self.cross_attn(self.with_pos_embed(tgt, query_pos),
+        #                        reference_points,
+        #                        src, src_spatial_shapes, level_start_index, src_padding_mask)
+        tgt2 = self.cross_attn(
+            query=tgt,
+            key=src,
+            value=src,
+            query_pos=query_pos,
+            key_padding_mask=src_padding_mask,
+            reference_points=reference_points,
+            spatial_shapes=src_spatial_shapes,
+            level_start_index=level_start_index,
+        )
+
         tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
         # self attention
