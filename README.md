@@ -42,7 +42,7 @@ You may use the following command for generating crowdhuman trainval annotation:
 cat annotation_train.odgt annotation_val.odgt > annotation_trainval.odgt
 ```
 
-### Training
+### Training (Local)
 
 You may download the coco pretrained weight from [Deformable DETR (+ iterative bounding box refinement)](https://github.com/fundamentalvision/Deformable-DETR#:~:text=config%0Alog-,model,-%2B%2B%20two%2Dstage%20Deformable), and modify the `--pretrained` argument to the path of the weight. Then training MOTR on 8 GPUs as following:
 
@@ -50,6 +50,16 @@ You may download the coco pretrained weight from [Deformable DETR (+ iterative b
 ./tools/train.sh
 ```
 Unlike the original MOTRv2 implementation, this fork uses hydra config, see the config.yaml file for all the configuration options that were previously passed as command line arguments.
+
+### Training (Sagemaker)
+
+Modify the config.yaml file to point to the correct AWS account, role, etc. Ensure that the pretrained model (`pretrained_s3`) and dataset path (`mot_path_s3`) are specified in the config file. Then launch the job with:
+
+```bash 
+./train_sagemaker.sh
+```
+
+TODO the model checkpoints, logs etc. are not currently being saved correctly.
 
 # Original README
 Refer to https://github.com/megvii-research/MOTRv2 for the original readme on MOTRv2
