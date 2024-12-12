@@ -25,7 +25,7 @@ from datasets.data_prefetcher import data_dict_to_cuda
 
 def train_one_epoch_mot(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
-                    device: torch.device, epoch: int, max_norm: float = 0):
+                    device: torch.device, epoch: int, max_norm: float = 0, wandb=None):
     model.train()
     criterion.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
@@ -75,6 +75,17 @@ def train_one_epoch_mot(model: torch.nn.Module, criterion: torch.nn.Module,
         metric_logger.update(grad_norm=grad_total_norm)
         # gather the stats from all processes
 
+        if wandb is not None:
+            wandb.log(
+                 {k: meter.value for k,meter in metric_logger.meters.items()}
+            )
+
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
+
+    if wandb is not None:
+        wandb.log(
+                {k + "_epoch": meter.global_avg for k, meter in metric_logger.meters.items()}
+        )
+
     return {k: meter.global_avg for k, meter in metric_logger.meters.items()}

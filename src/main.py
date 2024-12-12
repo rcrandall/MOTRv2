@@ -49,6 +49,16 @@ def main(args: DictConfig) -> None:
         assert args.masks, "Frozen training is meant for segmentation only"
     print(args)
 
+    if args.rank == 0 and args.use_wandb and args.wandb_key is not None:
+        import wandb
+        wandb.login(key=args.wandb_key)
+        wandb.init(
+            project=args.experiment_name,
+        )
+    else:
+        wandb = None
+
+
     device = torch.device(args.device)
 
     # fix the seed for reproducibility
@@ -163,7 +173,9 @@ def main(args: DictConfig) -> None:
         if args.distributed:
             sampler_train.set_epoch(epoch)
         train_stats = train_one_epoch_mot(
-            model, criterion, data_loader_train, optimizer, device, epoch, args.clip_max_norm)
+            model, criterion, data_loader_train, optimizer, device, epoch, args.clip_max_norm, wandb
+        )
+
         lr_scheduler.step()
         if args.output_dir:
             checkpoint_paths = [output_dir / 'checkpoint.pth']
