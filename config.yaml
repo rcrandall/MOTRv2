@@ -1,3 +1,10 @@
+sagemaker_base_dir_s3: auto-zoom-track
+aws_account_id: 533267246645
+profile_name: rti # profile for creating boto3 session
+profile_region: us-east-1
+iam_role_name: SageMakerTrainingJobRole # this role should exist in your account and allow submitting SM jobs
+experiment_name: motrv2_repro_sagemaker
+
 # dist params: overridden in script
 rank: 0
 world_size: 1
@@ -88,9 +95,12 @@ eval: False
 vis: False
 num_workers: 2
 pretrained: /home/rcrandal/MOTRv2/MOTRv2/r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
+pretrained_s3: s3://auto-zoom-track/models/r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
 cache_mode: False
 
 mot_path: /home/rcrandal/MOT_datasets
+mot_path_s3: s3://auto-zoom-track/datasets/MOT_datasets.tar.gz
+
 det_db: det_db_motrv2.json
 input_video: figs/demo.mp4
 data_txt_path_train: ./datasets/data_path/detmot17.train

@@ -15,6 +15,7 @@ import datetime
 import random
 import time
 from pathlib import Path
+import os
 
 import numpy as np
 import torch
@@ -34,6 +35,15 @@ from omegaconf import DictConfig
 def main(args: DictConfig) -> None:
     utils.init_distributed_mode(args)
     print("git:\n  {}\n".format(utils.get_sha()))
+
+    # Determine if we're running in Sagemaker, and if so, use the correct pretrained model
+    # path and dataset paths
+    if "SM_TRAINING_ENV" in os.environ:
+        args.pretrained = os.path.join(
+            os.environ['SM_CHANNEL_MODEL'],
+            os.path.basename(cfg.pretrained_s3)
+        )
+        args.mot_path = os.environ['SM_CHANNEL_TRAINING']
 
     if args.frozen_weights is not None:
         assert args.masks, "Frozen training is meant for segmentation only"
