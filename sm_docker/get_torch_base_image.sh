@@ -5,10 +5,11 @@ ada credentials update --account=533267246645 --provider=conduit --role=IibsAdmi
 
 account=$(aws sts get-caller-identity --query Account --output text --profile rti)
 region="us-east-1"
-ecrname="763104351884.dkr.ecr.${region}.amazonaws.com"
+#ecrname="763104351884.dkr.ecr.${region}.amazonaws.com"
+ercname="533267246645.dkr.ecr.us-east-1.amazonaws.com" #/motion-awareness:motion-awareness"
 ecrtoken=$(aws --region ${region} ecr get-login-password --profile rti)
 docker login --username AWS --password ${ecrtoken} ${ecrname}
 
-aws ecr get-login-password --region ${region} --profile rti | docker login --username AWS --password-stdin 763104351884.dkr.ecr.${region}.amazonaws.com
+# aws ecr get-login-password --region ${region} --profile rti | docker login --username AWS --password-stdin 763104351884.dkr.ecr.${region}.amazonaws.com
 
-docker pull 763104351884.dkr.ecr.${region}.amazonaws.com/pytorch-training:1.12.1-gpu-py38-cu113-ubuntu20.04-sagemaker
+# docker pull 763104351884.dkr.ecr.${region}.amazonaws.com/pytorch-training:1.12.1-gpu-py38-cu113-ubuntu20.04-sagemaker

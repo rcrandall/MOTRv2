@@ -16,6 +16,7 @@ import random
 import time
 from pathlib import Path
 import os
+import boto3
 
 import numpy as np
 import torch
@@ -31,6 +32,24 @@ from models import build_model
 import hydra
 from omegaconf import DictConfig
 
+def download_from_s3(s3_path, local_path):
+  """Downloads a file from an S3 path to a local path.
+
+  Args:
+    s3_path: The full S3 path to the file (e.g., 's3://my-bucket/path/to/file.txt').
+    local_path: The local path where the file should be saved.
+  """
+  try:
+    s3 = boto3.client('s3')
+    bucket_name = s3_path.split('/')[2]  # Extract bucket name
+    s3_key = '/'.join(s3_path.split('/')[3:])  # Extract key (path within bucket)
+
+    s3.download_file(bucket_name, s3_key, local_path)
+    print(f"Downloaded {s3_key} from S3 bucket {bucket_name} to {local_path}")
+  except Exception as e:
+    print(f"Error downloading file: {e}")
+
+
 @hydra.main(config_name="config")
 def main(args: DictConfig) -> None:
     utils.init_distributed_mode(args)
@@ -39,10 +58,11 @@ def main(args: DictConfig) -> None:
     # Determine if we're running in Sagemaker, and if so, use the correct pretrained model
     # path and dataset paths
     if "SM_TRAINING_ENV" in os.environ:
-        args.pretrained = os.path.join(
-            os.environ['SM_CHANNEL_MODEL'],
-            os.path.basename(cfg.pretrained_s3)
-        )
+        
+        # download the pretrained_s3 to local
+        args.pretrained = f"/opt/model/{os.path.basename(args.pretrained_s3)}"
+        download_from_s3(args.pretrained_s3, args.pretrained)
+
         args.mot_path = os.environ['SM_CHANNEL_TRAINING']
 
     if args.frozen_weights is not None:

@@ -10,7 +10,7 @@ import hydra
 from hydra.utils import get_original_cwd
 from omegaconf import DictConfig
 
-@hydra.main(config_name="config")
+@hydra.main(config_path="src", config_name="config")
 def main(cfg: DictConfig) -> None:
     # Set up the SageMaker session
     boto3_session = boto3.session.Session(
@@ -41,7 +41,8 @@ def main(cfg: DictConfig) -> None:
     # Define the PyTorch estimator
     estimator = PyTorch(
         entry_point="main.py",
-        source_dir=hydra.utils.get_original_cwd(), # "." would point to outputs/YYYY-MM-DD/HH-MM-SS because of hydra
+        # "." would point to outputs/YYYY-MM-DD/HH-MM-SS because of hydra
+        source_dir=os.path.join(hydra.utils.get_original_cwd(), "src"),
         instance_count=1,
         instance_type="ml.p3.16xlarge",  # try ml.p3dn.24xlarge for gpus with 32gb
         volume_size=100,  # GB
@@ -54,7 +55,7 @@ def main(cfg: DictConfig) -> None:
         tensorboard_output_config=tensorboard_output_config,
         checkpoint_s3_uri=os.path.join(output_path, "checkpoints"),
         checkpoint_local_path="/opt/ml/checkpoints",
-        model_data=cfg.pretrained_s3
+        image_uri=cfg.docker_image_uri
     )
 
     # Define the data channel. Sagemaker automatically downloads the data at the specified S3 path
