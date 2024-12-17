@@ -21,23 +21,20 @@ echo " image_tag: ${image_tag}"
 # ningzho AS account
 ada credentials update --account=${AWS_ACCOUNT} --provider=conduit --role=${AWS_ROLE} --once --profile ${PROFILE_NAME}
 
-# # Specify an algorithm name
-repo_name=ECR_REPO_NAME
-
 # Update for Ring
 account=$(aws --profile=rti sts get-caller-identity --query Account --output text)
 
 # Get the region defined in the current configuration (default to us-west-2 if none defined)
 ecrname="${account}.dkr.ecr.${region}.amazonaws.com"
-fullname="${ecrname}/${algorithm_name}:${image_tag}"
+fullname="${ecrname}/${ECR_REPO_NAME}:${image_tag}"
 
 # # register with ECR
 ecrtoken=$(aws --region ${region} --profile=rti ecr get-login-password)
 docker login --username AWS --password ${ecrtoken} ${ecrname}
 
 # Build the docker image locally with the image name
-tar -czh . | docker build -f Dockerfile -t ${algorithm_name} -
-docker tag ${algorithm_name} ${fullname}
+tar -czh . | docker build -f Dockerfile -t ${ECR_REPO_NAME} -
+docker tag ${ECR_REPO_NAME} ${fullname}
 
 echo "to push image to ECR run: docker push ${fullname}"
 

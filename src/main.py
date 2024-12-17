@@ -31,6 +31,7 @@ from models import build_model
 
 import hydra
 from omegaconf import DictConfig
+import tarfile
 
 def download_from_s3(s3_path, local_path):
   """Downloads a file from an S3 path to a local path.
@@ -44,6 +45,7 @@ def download_from_s3(s3_path, local_path):
     bucket_name = s3_path.split('/')[2]  # Extract bucket name
     s3_key = '/'.join(s3_path.split('/')[3:])  # Extract key (path within bucket)
 
+    print(f"Attempt download s3://{bucket_name}/{s3_key} to {local_path}")
     s3.download_file(bucket_name, s3_key, local_path)
     print(f"Downloaded {s3_key} from S3 bucket {bucket_name} to {local_path}")
   except Exception as e:
@@ -58,12 +60,26 @@ def main(args: DictConfig) -> None:
     # Determine if we're running in Sagemaker, and if so, use the correct pretrained model
     # path and dataset paths
     if "SM_TRAINING_ENV" in os.environ:
-        
-        # download the pretrained_s3 to local
-        args.pretrained = f"/opt/model/{os.path.basename(args.pretrained_s3)}"
-        download_from_s3(args.pretrained_s3, args.pretrained)
+        if utils.get_local_rank() == 0:
+            # download the pretrained_s3 to local
+            args.pretrained = f"/opt/model/{os.path.basename(args.pretrained_s3)}"
+            download_from_s3(args.pretrained_s3, args.pretrained)
 
-        args.mot_path = os.environ['SM_CHANNEL_TRAINING']
+            # print("Extracting training data")
+            # targz_file = os.path.join(os.environ['SM_CHANNEL_TRAIN'], os.path.basename(args.mot_path_s3))
+            # with tarfile.open(targz_file, 'r:gz') as tar:
+            #     tar.extractall(path=os.environ['SM_CHANNEL_TRAIN'])
+            # args.mot_path = os.path.join(os.environ['SM_CHANNEL_TRAIN'], "MOT_datasets")
+            # print("Extracted training data!")
+
+            args.mot_path = os.path.join(os.environ['SM_CHANNEL_TRAIN'])
+
+            print(f"Contents of {os.environ['SM_CHANNEL_TRAIN']}:")
+            for filename in os.listdir(os.environ['SM_CHANNEL_TRAIN']):
+                print(f" - {filename}") 
+        
+        torch.distributed.barrier()  # Ensures all processes wait for rank 0 to finish
+        
 
     if args.frozen_weights is not None:
         assert args.masks, "Frozen training is meant for segmentation only"

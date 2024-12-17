@@ -20,6 +20,7 @@ import time
 from collections import defaultdict, deque
 import datetime
 import pickle
+import json
 from typing import Optional, List
 
 import torch
@@ -407,6 +408,19 @@ def save_on_master(*args, **kwargs):
     if is_main_process():
         torch.save(*args, **kwargs)
 
+def get_sagemaker_training_world() -> dict:
+    num_gpus = int(os.environ["SM_NUM_GPUS"])
+    assert num_gpus > 0
+    hosts = json.loads(os.environ["SM_HOSTS"])
+    current_host = os.environ["SM_CURRENT_HOST"]
+    world = {}
+    world["number_of_processes"] = num_gpus
+    world["number_of_machines"] = len(hosts)
+    world["size"] = world["number_of_processes"] * world["number_of_machines"]
+    world["machine_rank"] = hosts.index(current_host)
+    world["master_addr"] = os.environ["MASTER_ADDR"]
+    world["master_port"] = os.environ["MASTER_PORT"]
+    return world
 
 def init_distributed_mode(args):
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
@@ -432,6 +446,21 @@ def init_distributed_mode(args):
         args.world_size = ntasks
         args.rank = proc_id
         args.gpu = proc_id % num_gpus
+    elif "SM_TRAINING_ENV" in os.environ:
+        world = get_sagemaker_training_world()
+
+        gpus_per_node = int(os.environ["SM_NUM_GPUS"])
+        os.environ["NODE_RANK"] = str(
+            int(os.environ.get("OMPI_COMM_WORLD_RANK")) // gpus_per_node
+        )
+        os.environ["LOCAL_RANK"] = os.environ.get("OMPI_COMM_WORLD_LOCAL_RANK", "")
+        os.environ["WORLD_SIZE"] = os.environ.get("OMPI_COMM_WORLD_SIZE")
+        _log.debug(f"get_sagemaker_training_world() gives: {world}")
+
+        # needed by mosaic streamingdataset
+        os.environ["RANK"] = os.environ.get("SMDATAPARALLEL_WORLD_RANK")
+        os.environ["LOCAL_WORLD_SIZE"] = os.environ["SM_NUM_GPUS"]
+
     else:
         print('Not using distributed mode')
         args.distributed = False
