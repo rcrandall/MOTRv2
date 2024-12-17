@@ -55,7 +55,12 @@ def main(cfg: DictConfig) -> None:
         tensorboard_output_config=tensorboard_output_config,
         checkpoint_s3_uri=os.path.join(output_path, "checkpoints"),
         checkpoint_local_path="/opt/ml/checkpoints",
-        image_uri=cfg.docker_image_uri
+        image_uri=cfg.docker_image_uri,
+        distribution={
+            "pytorchddp": {
+                "enabled": True
+        }
+    }
     )
 
     # Define the data channel. Sagemaker automatically downloads the data at the specified S3 path

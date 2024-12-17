@@ -62,7 +62,7 @@ def main(args: DictConfig) -> None:
     if "SM_TRAINING_ENV" in os.environ:
         if utils.get_local_rank() == 0:
             # download the pretrained_s3 to local
-            args.pretrained = f"/opt/model/{os.path.basename(args.pretrained_s3)}"
+            args.pretrained = os.path.join(os.environ['SM_MODEL_DIR'], os.path.basename(args.pretrained_s3))
             download_from_s3(args.pretrained_s3, args.pretrained)
 
             # print("Extracting training data")
@@ -76,7 +76,9 @@ def main(args: DictConfig) -> None:
 
             print(f"Contents of {os.environ['SM_CHANNEL_TRAIN']}:")
             for filename in os.listdir(os.environ['SM_CHANNEL_TRAIN']):
-                print(f" - {filename}") 
+                print(f" - {filename}")
+            
+            print(f"mot_path: {args.mot_path}")
         
         torch.distributed.barrier()  # Ensures all processes wait for rank 0 to finish
         
@@ -234,5 +236,7 @@ def main(args: DictConfig) -> None:
 
 
 if __name__ == '__main__':
+
+    os.environ["HYDRA_FULL_ERROR"] = "1"
     
     main()

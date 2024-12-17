@@ -5,14 +5,14 @@ profile_region: us-east-1
 iam_role_name: SageMakerTrainingJobRole # this role should exist in your account and allow submitting SM jobs
 experiment_name: motrv2_repro_sagemaker
 # Enable Weights and Biases logging. If True, the wandb_key must also be set
-use_wandb: False
+use_wandb: True
 # wandb API key (https://docs.wandb.ai/guides/track/environment-variables)
-wandb_key: None
-docker_image_uri: None
+wandb_key: 2f3739d3911380e6992d20fb7c774204f898bc2e
+docker_image_uri: 533267246645.dkr.ecr.us-east-1.amazonaws.com/motion-awareness:motion-awareness
 
 # paths for local training
-mot_path: /home/ec2-user/MOT_datasets
-pretrained: /home/ec2-user/MOT_datasets/r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
+mot_path: /opt/ml/input/data/train #/home/rcrandal/MOT_datasets
+pretrained: #/home/rcrandal/MOT_datasets/r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
 # paths for Sagemaker
 mot_path_s3: s3://auto-zoom-track/datasets/MOT_datasets
 pretrained_s3: s3://auto-zoom-track/models/r50_deformable_detr_plus_iterative_bbox_refinement-checkpoint.pth
