@@ -1,5 +1,5 @@
 # Fork details
-Modified code to use the mmcv implementation of MultiScaleDeformableAttention (from [here](https://mmcv.readthedocs.io/en/latest/_modules/mmcv/ops/multi_scale_deform_attn.html)). Purpose is to avoid requiring the build step which is trickier to set up with Sagemaker. With this change, the step to install MSDeformAttn ops with "make.sh" is not required.
+Modified code to use the mmcv implementation of MultiScaleDeformableAttention (from [here](https://mmcv.readthedocs.io/en/latest/_modules/mmcv/ops/multi_scale_deform_attn.html)). Purpose is to avoid requiring the build step which is trickier to set up with Sagemaker. With this change, the step to install MSDeformAttn ops with "make.sh" from the original repo is not required.
 
 Also modified to use [hydra](https://hydra.cc/docs/intro/) config instead of command-line args.
 
@@ -52,8 +52,7 @@ You may download the coco pretrained weight from [Deformable DETR (+ iterative b
 Unlike the original MOTRv2 implementation, this fork uses hydra config, see the config.yaml file for all the configuration options that were previously passed as command line arguments.
 
 ### Training (Sagemaker)
-
-Modify the config.yaml file to point to the correct AWS account, role, etc. Ensure that the pretrained model (`pretrained_s3`) and dataset path (`mot_path_s3`) are specified in the config file. Then launch the job with:
+To train in Sagemaker, first build a Docker image using `publish_image_torch.sh` (in the sm_docker dir). Set the corresponding URI in config.yaml. Also modify the config.yaml file to point to the correct AWS account, role, etc. Ensure that the pretrained model (`pretrained_s3`) and dataset path (`mot_path_s3`) are specified in the config file. Then launch the job with:
 
 ```bash 
 ./train_sagemaker.sh
