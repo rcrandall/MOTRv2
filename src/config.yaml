@@ -5,10 +5,10 @@ profile_region: us-east-1
 iam_role_name: SageMakerTrainingJobRole # this role should exist in your account and allow submitting SM jobs
 experiment_name: motrv2_repro_sagemaker
 # Enable Weights and Biases logging. If True, the wandb_key must also be set
-use_wandb: True
+use_wandb: False
 # wandb API key (https://docs.wandb.ai/guides/track/environment-variables)
-wandb_key: 2f3739d3911380e6992d20fb7c774204f898bc2e
-docker_image_uri: 533267246645.dkr.ecr.us-east-1.amazonaws.com/motion-awareness:motion-awareness
+wandb_key: None
+docker_image_uri: None
 
 # paths for local training
 mot_path: /home/ec2-user/MOT_datasets
